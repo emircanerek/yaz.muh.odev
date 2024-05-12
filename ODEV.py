@@ -3,9 +3,6 @@ import mediapipe
 import pyttsx3
 import math
 
-
-
-
 camera = cv2.VideoCapture(0)
 engine = pyttsx3.init()
 mpHands = mediapipe.solutions.hands
@@ -24,6 +21,7 @@ while True:
 
     if results.multi_hand_landmarks:
         for hand_landmarks in results.multi_hand_landmarks:
+
             # İşaret parmağı 6. 7. ve 8. landmarklar arası açıları
             # İşaret parmağının eklemlerinin indeksleri (MediaPipe Hands kütüphanesine göre)
             index_base = hand_landmarks.landmark[mpHands.HandLandmark.INDEX_FINGER_MCP]
@@ -74,9 +72,7 @@ while True:
             cv2.putText(img, f"Mid_Angle: {int(mid_angle)}", (25, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
             # Eklemleri çiz
-            mpDraw.draw_landmarks(img, hand_landmarks, mpHands.HAND_CONNECTIONS)
-
-
+            # mpDraw.draw_landmarks(img, hand_landmarks, mpHands.HAND_CONNECTIONS)
 
 
     if hlms.multi_hand_landmarks:
@@ -89,9 +85,6 @@ while True:
             mpDraw.draw_landmarks(img, handlandmarks, mpHands.HAND_CONNECTIONS)
 
     cv2.imshow("Camera", img)
-
-
-
 
 
     if cv2.waitKey(1) & 0xFF == ord("q"):
