@@ -65,7 +65,7 @@ while True:
             mid_distance_base_tip = math.dist(mid_base_coords, mid_tip_coords)
 
             # İki vektör arasındaki açıyı hesapla (Cosinus teoremi kullanılarak)
-            mid_angle = math.degrees(math.acos((mid_distance_base_mid ** 2 + mid_distance_mid_tip ** 2 - mid_distance_base_tip ** 2 ) /
+            mid_angle = math.degrees(math.acos((mid_distance_base_mid ** 2 + mid_distance_mid_tip ** 2 - mid_distance_base_tip ** 2) /
                                      (2 * mid_distance_base_mid * mid_distance_mid_tip)))
 
             # Açıyı ekrana yazdır
@@ -73,6 +73,28 @@ while True:
 
             # Eklemleri çiz
             # mpDraw.draw_landmarks(img, hand_landmarks, mpHands.HAND_CONNECTIONS)
+
+            # Yüzük parmağı 14. 15. ve 16. landmarklar arası açıları hesapla
+            # Yüzük parmağı eklemlerinin indexleri
+            ring_base = hand_landmarks.landmark[mpHands.HandLandmark.RING_FINGER_PIP]
+            ring_mid = hand_landmarks.landmark[mpHands.HandLandmark.RING_FINGER_DIP]
+            ring_tip = hand_landmarks.landmark[mpHands.HandLandmark.RING_FINGER_TIP]
+
+            # Yüzük parmağının eklemlerinin koordinatlarını alın
+            ring_base_coords = (ring_base.x, ring_base.y)
+            ring_mid_coords = (ring_mid.x, ring_mid.y)
+            ring_tip_coords = (ring_tip.x, ring_tip.y)
+
+            # İki eklem arası koordinatları vektörleştirip aralarındaki mesafeleri hesaplama
+            ring_distance_base_mid = math.dist(ring_base_coords, ring_mid_coords)
+            ring_distance_mid_tip = math.dist(ring_mid_coords, ring_tip_coords)
+            ring_distance_base_tip = math.dist(ring_base_coords, ring_tip_coords)
+
+            # Vektörler arası açıları hesapla(Cosinus Teoremi)
+            ring_angle = math.degrees(math.acos((ring_distance_base_mid ** 2 + ring_distance_mid_tip ** 2 - ring_distance_base_tip ** 2) /
+                                                (2 * ring_distance_base_mid * ring_distance_mid_tip)))
+            # Ekrana yaz
+            cv2.putText(img, f"Ring_Angle: {int(mid_angle)}", (25, 150), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
 
     if hlms.multi_hand_landmarks:
