@@ -4,6 +4,11 @@ import pyttsx3
 import math
 
 camera = cv2.VideoCapture(0)
+width = camera.get(3)
+height = camera.get(4)
+camera.set(3, 1280)
+camera.set(4, 720)
+print("Current resolution:", width, "x", height)
 engine = pyttsx3.init()
 mpHands = mediapipe.solutions.hands
 hands = mpHands.Hands()
@@ -17,7 +22,7 @@ while True:
     height, width, channel = img.shape
     results = hands.process(imgRGB)
 
-    print(hlms.multi_hand_landmarks)
+    # print(hlms.multi_hand_landmarks)
 
     if results.multi_hand_landmarks:
         for hand_landmarks in results.multi_hand_landmarks:
