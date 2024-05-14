@@ -99,7 +99,37 @@ while True:
             ring_angle = math.degrees(math.acos((ring_distance_base_mid ** 2 + ring_distance_mid_tip ** 2 - ring_distance_base_tip ** 2) /
                                                 (2 * ring_distance_base_mid * ring_distance_mid_tip)))
             # Ekrana yaz
-            cv2.putText(img, f"Ring_Angle: {int(mid_angle)}", (25, 150), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+            cv2.putText(img, f"Ring_Angle: {int(ring_angle)}", (25, 150), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+
+            # Serçe Parmağı 18. 19. ve 20. eklemlerinin açılarını hesaplar
+            # Serçe Parmağı eklemlerinin indexleri
+            pinky_base = hand_landmarks.landmark[mpHands.HandLandmark.PINKY_PIP]
+            pinky_mid = hand_landmarks.landmark[mpHands.HandLandmark.PINKY_DIP]
+            pinky_tip = hand_landmarks.landmark[mpHands.HandLandmark.PINKY_TIP]
+
+            #dx = pinky_tip.x - pinky_base.x
+            #dy = pinky_tip.y - pinky_base.y
+
+            #angle_rad = math.atan2(dy, dx)
+            #angle_deg = math.degrees(angle_rad)
+            #cv2.putText(img, f"Pinky Angle: {angle_deg:.2f}", (10, 200), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+
+            # Serçe Parmağının eklemlerinin koordinatlarını alın
+            pinky_base_coords = (pinky_base.x, pinky_base.y)
+            pinky_mid_coords = (pinky_mid.x, pinky_mid.y)
+            pinky_tip_coords = (pinky_tip.x, pinky_tip.y)
+
+            # İki eklem arası koordinaları vektörleştirip aralarındaki mesafeleri hesaplama
+            pinky_distance_base_mid = math.dist(pinky_base_coords, pinky_mid_coords)
+            pinky_distance_mid_tip = math.dist(pinky_mid_coords, pinky_tip_coords)
+            pinky_distance_base_tip = math.dist(pinky_base_coords, pinky_tip_coords)
+
+            # Vektörler arası açıları hesaplama
+
+            pinky_angle = math.degrees(math.acos((pinky_distance_base_mid ** 2 + pinky_distance_mid_tip ** 2 - pinky_distance_base_tip ** 2) /
+                                       (2 * pinky_distance_base_tip * pinky_distance_mid_tip)))
+
+            cv2.putText(img, f"Pinky_Angle: {int(pinky_angle)}", (25, 200), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
 
     if hlms.multi_hand_landmarks:
@@ -108,11 +138,9 @@ while True:
             for fingerNum, landmark in enumerate(handlandmarks.landmark):
                 positionX, positionY = int(landmark.x * width), int(landmark.y * height)
 
-
             mpDraw.draw_landmarks(img, handlandmarks, mpHands.HAND_CONNECTIONS)
 
     cv2.imshow("Camera", img)
-
 
     if cv2.waitKey(1) & 0xFF == ord("q"):
         break
