@@ -1,163 +1,110 @@
 import cv2
-import mediapipe
+import mediapipe as mp
 import pyttsx3
 import math
 
+# Kamera ayarları
 camera = cv2.VideoCapture(0)
-width = camera.get(3)
-height = camera.get(4)
-camera.set(3, 1280)
-camera.set(4, 720)
-print("Current resolution:", width, "x", height)
+camera.set(3, 1280)  # Genişlik
+camera.set(4, 720)  # Yükseklik
 engine = pyttsx3.init()
-mpHands = mediapipe.solutions.hands
+
+# MediaPipe
+mpHands = mp.solutions.hands
 hands = mpHands.Hands()
-mpDraw = mediapipe.solutions.drawing_utils
+mpDraw = mp.solutions.drawing_utils
+
+# Açıları hesaplama
+def calculate_angle(coords1, coords2, coords3):
+    distance1 = math.dist(coords1, coords2)
+    distance2 = math.dist(coords2, coords3)
+    distance3 = math.dist(coords1, coords3)
+
+    if distance1 * distance2 == 0:
+        return 0
+
+    angle = math.degrees(math.acos((distance1 ** 2 + distance2 ** 2 - distance3 ** 2) / (2 * distance1 * distance2)))
+    return angle
+
+
+def get_landmark_coords(landmark, img_width, img_height):
+    return (landmark.x * img_width, landmark.y * img_height)
+
+
+def calculate_thumb_angle(hand_landmarks, img_width, img_height):
+    thumb_base = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.THUMB_CMC], img_width, img_height)
+    thumb_mid = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.THUMB_IP], img_width, img_height)
+    thumb_tip = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.THUMB_TIP], img_width, img_height)
+    return calculate_angle(thumb_base, thumb_mid, thumb_tip)
+
+
+def calculate_index_finger_angle(hand_landmarks, img_width, img_height):
+    index_base = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.INDEX_FINGER_MCP], img_width,
+                                     img_height)
+    index_mid = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.INDEX_FINGER_PIP], img_width,
+                                    img_height)
+    index_tip = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.INDEX_FINGER_TIP], img_width,
+                                    img_height)
+    return calculate_angle(index_base, index_mid, index_tip)
+
+
+def calculate_middle_finger_angle(hand_landmarks, img_width, img_height):
+    mid_base = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.MIDDLE_FINGER_MCP], img_width,
+                                   img_height)
+    mid_mid = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.MIDDLE_FINGER_DIP], img_width,
+                                  img_height)
+    mid_tip = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.MIDDLE_FINGER_TIP], img_width,
+                                  img_height)
+    return calculate_angle(mid_base, mid_mid, mid_tip)
+
+
+def calculate_ring_finger_angle(hand_landmarks, img_width, img_height):
+    ring_base = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.RING_FINGER_PIP], img_width,
+                                    img_height)
+    ring_mid = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.RING_FINGER_DIP], img_width, img_height)
+    ring_tip = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.RING_FINGER_TIP], img_width, img_height)
+    return calculate_angle(ring_base, ring_mid, ring_tip)
+
+
+def calculate_pinky_finger_angle(hand_landmarks, img_width, img_height):
+    pinky_base = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.PINKY_PIP], img_width, img_height)
+    pinky_mid = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.PINKY_DIP], img_width, img_height)
+    pinky_tip = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.PINKY_TIP], img_width, img_height)
+    return calculate_angle(pinky_base, pinky_mid, pinky_tip)
+
 
 while True:
-
     success, img = camera.read()
     imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    hlms = hands.process(imgRGB)
     height, width, channel = img.shape
     results = hands.process(imgRGB)
 
-    # print(hlms.multi_hand_landmarks)
-
     if results.multi_hand_landmarks:
         for hand_landmarks in results.multi_hand_landmarks:
+            # Açılar hesaplanır ve ekrana yazılır
+            thumb_angle = calculate_thumb_angle(hand_landmarks, width, height)
+            cv2.putText(img, f"Thumb_Angle: {int(thumb_angle)}", (25, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
-            # İşaret parmağı 6. 7. ve 8. landmarklar arası açıları
-            # İşaret parmağının eklemlerinin indeksleri (MediaPipe Hands kütüphanesine göre)
-            index_base = hand_landmarks.landmark[mpHands.HandLandmark.INDEX_FINGER_MCP]
-            index_mid = hand_landmarks.landmark[mpHands.HandLandmark.INDEX_FINGER_PIP]
-            index_tip = hand_landmarks.landmark[mpHands.HandLandmark.INDEX_FINGER_TIP]
+            index_angle = calculate_index_finger_angle(hand_landmarks, width, height)
+            cv2.putText(img, f"Index_Angle: {int(index_angle)}", (25, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
-            # İşaret parmağının eklemlerinin koordinatlarını alın
-            index_base_coords = (index_base.x, index_base.y)
-            index_mid_coords = (index_mid.x, index_mid.y)
-            index_tip_coords = (index_tip.x, index_tip.y)
+            mid_angle = calculate_middle_finger_angle(hand_landmarks, width, height)
+            cv2.putText(img, f"Mid_Angle: {int(mid_angle)}", (25, 150), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
-            # İki eklemin koordinatları arasındaki mesafeyi ve açıyı hesapla
-            index_distance_base_mid = math.dist(index_base_coords, index_mid_coords)
-            index_distance_mid_tip = math.dist(index_mid_coords, index_tip_coords)
-            index_distance_base_tip = math.dist(index_base_coords, index_tip_coords)
+            ring_angle = calculate_ring_finger_angle(hand_landmarks, width, height)
+            cv2.putText(img, f"Ring_Angle: {int(ring_angle)}", (25, 200), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
-            # İki vektör arasındaki açıyı hesapla (Cosinus teoremi kullanılarak)
-            index_angle = math.degrees(math.acos((index_distance_base_mid ** 2 + index_distance_mid_tip ** 2 - index_distance_base_tip ** 2) /
-                                           (2 * index_distance_base_mid * index_distance_mid_tip)))
-
-            # Açıyı ekrana yazdır
-            cv2.putText(img, f"Index_Angle: {int(index_angle)}", (25, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+            pinky_angle = calculate_pinky_finger_angle(hand_landmarks, width, height)
+            cv2.putText(img, f"Pinky_Angle: {int(pinky_angle)}", (25, 250), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
             # Eklemleri çiz
             mpDraw.draw_landmarks(img, hand_landmarks, mpHands.HAND_CONNECTIONS)
 
-            # Orta parmak 10. 11. ve 12. landmarklar arası açıları hesaplar
-            # Orta parmağın eklemlerinin indexleri
-            mid_base = hand_landmarks.landmark[mpHands.HandLandmark.MIDDLE_FINGER_MCP]
-            mid_mid = hand_landmarks.landmark[mpHands.HandLandmark.MIDDLE_FINGER_DIP]
-            mid_tip = hand_landmarks.landmark[mpHands.HandLandmark.MIDDLE_FINGER_TIP]
-
-            # Orta parmağın eklemlerinin koordinatlarını alın
-            mid_base_coords = (mid_base.x, mid_base.y)
-            mid_mid_coords = (mid_mid.x, mid_mid.y)
-            mid_tip_coords = (mid_tip.x, mid_tip.y)
-
-            # İki eklemin koordinatları arasındaki mesafeyi ve açıyı hesapla
-            mid_distance_base_mid = math.dist(mid_base_coords, mid_mid_coords)
-            mid_distance_mid_tip = math.dist(mid_mid_coords, mid_tip_coords)
-            mid_distance_base_tip = math.dist(mid_base_coords, mid_tip_coords)
-
-            # İki vektör arasındaki açıyı hesapla (Cosinus teoremi kullanılarak)
-            mid_angle = math.degrees(math.acos((mid_distance_base_mid ** 2 + mid_distance_mid_tip ** 2 - mid_distance_base_tip ** 2) /
-                                     (2 * mid_distance_base_mid * mid_distance_mid_tip)))
-
-            # Açıyı ekrana yazdır
-            cv2.putText(img, f"Mid_Angle: {int(mid_angle)}", (25, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-
-            # Eklemleri çiz
-            # mpDraw.draw_landmarks(img, hand_landmarks, mpHands.HAND_CONNECTIONS)
-
-            # Yüzük parmağı 14. 15. ve 16. landmarklar arası açıları hesapla
-            # Yüzük parmağı eklemlerinin indexleri
-            ring_base = hand_landmarks.landmark[mpHands.HandLandmark.RING_FINGER_PIP]
-            ring_mid = hand_landmarks.landmark[mpHands.HandLandmark.RING_FINGER_DIP]
-            ring_tip = hand_landmarks.landmark[mpHands.HandLandmark.RING_FINGER_TIP]
-
-            # Yüzük parmağının eklemlerinin koordinatlarını alın
-            ring_base_coords = (ring_base.x, ring_base.y)
-            ring_mid_coords = (ring_mid.x, ring_mid.y)
-            ring_tip_coords = (ring_tip.x, ring_tip.y)
-
-            # İki eklem arası koordinatları vektörleştirip aralarındaki mesafeleri hesaplama
-            ring_distance_base_mid = math.dist(ring_base_coords, ring_mid_coords)
-            ring_distance_mid_tip = math.dist(ring_mid_coords, ring_tip_coords)
-            ring_distance_base_tip = math.dist(ring_base_coords, ring_tip_coords)
-
-            # Vektörler arası açıları hesapla(Cosinus Teoremi)
-            ring_angle = math.degrees(math.acos((ring_distance_base_mid ** 2 + ring_distance_mid_tip ** 2 - ring_distance_base_tip ** 2) /
-                                                (2 * ring_distance_base_mid * ring_distance_mid_tip)))
-            # Ekrana yaz
-            cv2.putText(img, f"Ring_Angle: {int(ring_angle)}", (25, 150), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-
-            # Serçe Parmağı 18. 19. ve 20. eklemlerinin açılarını hesaplar
-            # Serçe Parmağı eklemlerinin indexleri
-            pinky_base = hand_landmarks.landmark[mpHands.HandLandmark.PINKY_PIP]
-            pinky_mid = hand_landmarks.landmark[mpHands.HandLandmark.PINKY_DIP]
-            pinky_tip = hand_landmarks.landmark[mpHands.HandLandmark.PINKY_TIP]
-
-            # Serçe Parmağının eklemlerinin koordinatlarını alın
-            pinky_base_coords = (pinky_base.x, pinky_base.y)
-            pinky_mid_coords = (pinky_mid.x, pinky_mid.y)
-            pinky_tip_coords = (pinky_tip.x, pinky_tip.y)
-
-            # İki eklem arası koordinaları vektörleştirip aralarındaki mesafeleri hesaplama
-            pinky_distance_base_mid = math.dist(pinky_base_coords, pinky_mid_coords)
-            pinky_distance_mid_tip = math.dist(pinky_mid_coords, pinky_tip_coords)
-            pinky_distance_base_tip = math.dist(pinky_base_coords, pinky_tip_coords)
-
-            # Vektörler arası açıları hesaplama
-            pinky_angle = math.degrees(math.acos((pinky_distance_base_mid ** 2 + pinky_distance_mid_tip ** 2 - pinky_distance_base_tip ** 2) /
-                                                (2 * pinky_distance_base_mid * pinky_distance_mid_tip)))
-            # Serçe parmağın açısını ekrana yazdırma
-            cv2.putText(img, f"Pinky_Angle: {int(pinky_angle)}", (25, 200), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-
-            # Baş parmak 2. 3. ve 4. eklemlerinin aralarındaki açıları hesaplar
-            thumb_base = hand_landmarks.landmark[mpHands.HandLandmark.THUMB_CMC]
-            thumb_mid = hand_landmarks.landmark[mpHands.HandLandmark.THUMB_IP]
-            thumb_tip = hand_landmarks.landmark[mpHands.HandLandmark.THUMB_TIP]
-
-            # Baş parmak eklemlerinin koordinatlarını alın
-            thumb_base_coords = (thumb_base.x, thumb_base.y)
-            thumb_mid_coords = (thumb_mid.x, thumb_mid.y)
-            thumb_tip_coords = (thumb_tip.x, thumb_tip.y)
-
-            # İki eklem arası koordinatları vektörleştirip aralarındaki mesafeleri hesaplama
-            thumb_distance_base_mid = math.dist(thumb_base_coords, thumb_mid_coords)
-            thumb_distance_mid_tip = math.dist(thumb_mid_coords, thumb_tip_coords)
-            thumb_distance_base_tip = math.dist(thumb_base_coords, thumb_tip_coords)
-
-            # Vektörler arası açıları hesaplama
-            thumb_angle = math.degrees(math.acos((thumb_distance_base_mid ** 2 + thumb_distance_mid_tip ** 2 - thumb_distance_base_tip ** 2) /
-                                                (2 * thumb_distance_base_mid * thumb_distance_mid_tip)))
-
-            # Baş parmak açısını ekrana yazdırma
-            cv2.putText(img, f"Thumb_Angle: {int(thumb_angle)}", (25, 250), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-
-
-
-
-
-    if hlms.multi_hand_landmarks:
-        for handlandmarks in hlms.multi_hand_landmarks:
-
-            for fingerNum, landmark in enumerate(handlandmarks.landmark):
-                positionX, positionY = int(landmark.x * width), int(landmark.y * height)
-
-            mpDraw.draw_landmarks(img, handlandmarks, mpHands.HAND_CONNECTIONS)
-
     cv2.imshow("Camera", img)
 
+    # Kamera Çıkış Tuşu
     if cv2.waitKey(1) & 0xFF == ord("q"):
         break
+
+camera.release()
+cv2.destroyAllWindows()
