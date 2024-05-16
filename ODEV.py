@@ -107,13 +107,6 @@ while True:
             pinky_mid = hand_landmarks.landmark[mpHands.HandLandmark.PINKY_DIP]
             pinky_tip = hand_landmarks.landmark[mpHands.HandLandmark.PINKY_TIP]
 
-            #dx = pinky_tip.x - pinky_base.x
-            #dy = pinky_tip.y - pinky_base.y
-
-            #angle_rad = math.atan2(dy, dx)
-            #angle_deg = math.degrees(angle_rad)
-            #cv2.putText(img, f"Pinky Angle: {angle_deg:.2f}", (10, 200), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-
             # Serçe Parmağının eklemlerinin koordinatlarını alın
             pinky_base_coords = (pinky_base.x, pinky_base.y)
             pinky_mid_coords = (pinky_mid.x, pinky_mid.y)
@@ -125,11 +118,35 @@ while True:
             pinky_distance_base_tip = math.dist(pinky_base_coords, pinky_tip_coords)
 
             # Vektörler arası açıları hesaplama
-
             pinky_angle = math.degrees(math.acos((pinky_distance_base_mid ** 2 + pinky_distance_mid_tip ** 2 - pinky_distance_base_tip ** 2) /
-                                       (2 * pinky_distance_base_tip * pinky_distance_mid_tip)))
-
+                                                (2 * pinky_distance_base_mid * pinky_distance_mid_tip)))
+            # Serçe parmağın açısını ekrana yazdırma
             cv2.putText(img, f"Pinky_Angle: {int(pinky_angle)}", (25, 200), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+
+            # Baş parmak 2. 3. ve 4. eklemlerinin aralarındaki açıları hesaplar
+            thumb_base = hand_landmarks.landmark[mpHands.HandLandmark.THUMB_CMC]
+            thumb_mid = hand_landmarks.landmark[mpHands.HandLandmark.THUMB_IP]
+            thumb_tip = hand_landmarks.landmark[mpHands.HandLandmark.THUMB_TIP]
+
+            # Baş parmak eklemlerinin koordinatlarını alın
+            thumb_base_coords = (thumb_base.x, thumb_base.y)
+            thumb_mid_coords = (thumb_mid.x, thumb_mid.y)
+            thumb_tip_coords = (thumb_tip.x, thumb_tip.y)
+
+            # İki eklem arası koordinatları vektörleştirip aralarındaki mesafeleri hesaplama
+            thumb_distance_base_mid = math.dist(thumb_base_coords, thumb_mid_coords)
+            thumb_distance_mid_tip = math.dist(thumb_mid_coords, thumb_tip_coords)
+            thumb_distance_base_tip = math.dist(thumb_base_coords, thumb_tip_coords)
+
+            # Vektörler arası açıları hesaplama
+            thumb_angle = math.degrees(math.acos((thumb_distance_base_mid ** 2 + thumb_distance_mid_tip ** 2 - thumb_distance_base_tip ** 2) /
+                                                (2 * thumb_distance_base_mid * thumb_distance_mid_tip)))
+
+            # Baş parmak açısını ekrana yazdırma
+            cv2.putText(img, f"Thumb_Angle: {int(thumb_angle)}", (25, 250), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+
+
+
 
 
     if hlms.multi_hand_landmarks:
