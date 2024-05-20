@@ -1,13 +1,11 @@
 import cv2
 import mediapipe as mp
-import pyttsx3
 import math
 
 # Kamera ayarları
 camera = cv2.VideoCapture(0)
 camera.set(3, 1280)  # Genişlik
 camera.set(4, 720)  # Yükseklik
-engine = pyttsx3.init()
 
 # MediaPipe
 mpHands = mp.solutions.hands
@@ -26,8 +24,10 @@ def calculate_angle(coords1, coords2, coords3):
     angle = math.degrees(math.acos((distance1 ** 2 + distance2 ** 2 - distance3 ** 2) / (2 * distance1 * distance2)))
     return angle
 
+
 def get_landmark_coords(landmark, img_width, img_height):
     return (landmark.x * img_width, landmark.y * img_height)
+
 
 def calculate_thumb_angle(hand_landmarks, img_width, img_height):
     thumb_base = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.THUMB_CMC], img_width, img_height)
@@ -35,11 +35,13 @@ def calculate_thumb_angle(hand_landmarks, img_width, img_height):
     thumb_tip = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.THUMB_TIP], img_width, img_height)
     return calculate_angle(thumb_base, thumb_mid, thumb_tip)
 
+
 def calculate_index_finger_angle(hand_landmarks, img_width, img_height):
     index_base = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.INDEX_FINGER_MCP], img_width, img_height)
     index_mid = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.INDEX_FINGER_PIP], img_width, img_height)
     index_tip = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.INDEX_FINGER_TIP], img_width, img_height)
     return calculate_angle(index_base, index_mid, index_tip)
+
 
 def calculate_middle_finger_angle(hand_landmarks, img_width, img_height):
     mid_base = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.MIDDLE_FINGER_MCP], img_width, img_height)
@@ -47,17 +49,20 @@ def calculate_middle_finger_angle(hand_landmarks, img_width, img_height):
     mid_tip = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.MIDDLE_FINGER_TIP], img_width, img_height)
     return calculate_angle(mid_base, mid_mid, mid_tip)
 
+
 def calculate_ring_finger_angle(hand_landmarks, img_width, img_height):
     ring_base = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.RING_FINGER_PIP], img_width, img_height)
     ring_mid = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.RING_FINGER_DIP], img_width, img_height)
     ring_tip = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.RING_FINGER_TIP], img_width, img_height)
     return calculate_angle(ring_base, ring_mid, ring_tip)
 
+
 def calculate_pinky_finger_angle(hand_landmarks, img_width, img_height):
     pinky_base = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.PINKY_PIP], img_width, img_height)
     pinky_mid = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.PINKY_DIP], img_width, img_height)
     pinky_tip = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.PINKY_TIP], img_width, img_height)
     return calculate_angle(pinky_base, pinky_mid, pinky_tip)
+
 
 def detect_hand_status(thumb_angle, index_angle, mid_angle, ring_angle, pinky_angle):
     if thumb_angle < 30 and index_angle < 30 and mid_angle < 30 and ring_angle < 30 and pinky_angle < 30:
@@ -67,8 +72,12 @@ def detect_hand_status(thumb_angle, index_angle, mid_angle, ring_angle, pinky_an
     else:
         return "Sagliklisiniz"
 
+
 while True:
     success, img = camera.read()
+    if not success:
+        break
+
     imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     height, width, channel = img.shape
     results = hands.process(imgRGB)
@@ -77,18 +86,22 @@ while True:
         for hand_landmarks in results.multi_hand_landmarks:
             # Açılar hesaplanır ve ekrana yazılır
             thumb_angle = calculate_thumb_angle(hand_landmarks, width, height)
-            index_angle = calculate_index_finger_angle(hand_landmarks, width, height)
-            mid_angle = calculate_middle_finger_angle(hand_landmarks, width, height)
-            ring_angle = calculate_ring_finger_angle(hand_landmarks, width, height)
-            pinky_angle = calculate_pinky_finger_angle(hand_landmarks, width, height)
-
-            hand_status = detect_hand_status(thumb_angle, index_angle, mid_angle, ring_angle, pinky_angle)
-
             cv2.putText(img, f"Thumb_Angle: {int(thumb_angle)}", (25, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+
+            index_angle = calculate_index_finger_angle(hand_landmarks, width, height)
             cv2.putText(img, f"Index_Angle: {int(index_angle)}", (25, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+
+            mid_angle = calculate_middle_finger_angle(hand_landmarks, width, height)
             cv2.putText(img, f"Mid_Angle: {int(mid_angle)}", (25, 150), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+
+            ring_angle = calculate_ring_finger_angle(hand_landmarks, width, height)
             cv2.putText(img, f"Ring_Angle: {int(ring_angle)}", (25, 200), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+
+            pinky_angle = calculate_pinky_finger_angle(hand_landmarks, width, height)
             cv2.putText(img, f"Pinky_Angle: {int(pinky_angle)}", (25, 250), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+
+            # El durumu tespiti
+            hand_status = detect_hand_status(thumb_angle, index_angle, mid_angle, ring_angle, pinky_angle)
             cv2.putText(img, f"Status: {hand_status}", (25, 300), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
 
             # Eklemleri çiz
