@@ -12,58 +12,61 @@ mpHands = mp.solutions.hands
 hands = mpHands.Hands()
 mpDraw = mp.solutions.drawing_utils
 
-# Açıları hesaplama
+# Açıları hesaplama fonksiyonu
 def calculate_angle(coords1, coords2, coords3):
+    # İki nokta arasındaki mesafeleri hesapla
     distance1 = math.dist(coords1, coords2)
     distance2 = math.dist(coords2, coords3)
     distance3 = math.dist(coords1, coords3)
 
+    # Eğer mesafe sıfırsa, açı hesaplanamaz
     if distance1 * distance2 == 0:
         return 0
 
+    # Kosinüs teoremi kullanarak açıyı hesapla
     angle = math.degrees(math.acos((distance1 ** 2 + distance2 ** 2 - distance3 ** 2) / (2 * distance1 * distance2)))
     return angle
 
-
+# Landmark koordinatlarını elde etme fonksiyonu
 def get_landmark_coords(landmark, img_width, img_height):
     return (landmark.x * img_width, landmark.y * img_height)
 
-
+# Başparmak açısını hesaplama fonksiyonu
 def calculate_thumb_angle(hand_landmarks, img_width, img_height):
     thumb_base = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.THUMB_CMC], img_width, img_height)
     thumb_mid = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.THUMB_IP], img_width, img_height)
     thumb_tip = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.THUMB_TIP], img_width, img_height)
     return calculate_angle(thumb_base, thumb_mid, thumb_tip)
 
-
+# İşaret parmağı açısını hesaplama fonksiyonu
 def calculate_index_finger_angle(hand_landmarks, img_width, img_height):
     index_base = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.INDEX_FINGER_MCP], img_width, img_height)
     index_mid = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.INDEX_FINGER_PIP], img_width, img_height)
     index_tip = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.INDEX_FINGER_TIP], img_width, img_height)
     return calculate_angle(index_base, index_mid, index_tip)
 
-
+# Orta parmak açısını hesaplama fonksiyonu
 def calculate_middle_finger_angle(hand_landmarks, img_width, img_height):
     mid_base = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.MIDDLE_FINGER_MCP], img_width, img_height)
     mid_mid = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.MIDDLE_FINGER_DIP], img_width, img_height)
     mid_tip = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.MIDDLE_FINGER_TIP], img_width, img_height)
     return calculate_angle(mid_base, mid_mid, mid_tip)
 
-
+# Yüzük parmağı açısını hesaplama fonksiyonu
 def calculate_ring_finger_angle(hand_landmarks, img_width, img_height):
     ring_base = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.RING_FINGER_PIP], img_width, img_height)
     ring_mid = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.RING_FINGER_DIP], img_width, img_height)
     ring_tip = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.RING_FINGER_TIP], img_width, img_height)
     return calculate_angle(ring_base, ring_mid, ring_tip)
 
-
+# Serçe parmağı açısını hesaplama fonksiyonu
 def calculate_pinky_finger_angle(hand_landmarks, img_width, img_height):
     pinky_base = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.PINKY_PIP], img_width, img_height)
     pinky_mid = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.PINKY_DIP], img_width, img_height)
     pinky_tip = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.PINKY_TIP], img_width, img_height)
     return calculate_angle(pinky_base, pinky_mid, pinky_tip)
 
-
+# El durumu tespiti fonksiyonu
 def detect_hand_status(thumb_angle, index_angle, mid_angle, ring_angle, pinky_angle):
     if thumb_angle < 30 and index_angle < 30 and mid_angle < 30 and ring_angle < 30 and pinky_angle < 30:
         return "Hastasiniz"
@@ -71,7 +74,6 @@ def detect_hand_status(thumb_angle, index_angle, mid_angle, ring_angle, pinky_an
         return "Hasta olabilirsiniz"
     else:
         return "Sagliklisiniz"
-
 
 while True:
     success, img = camera.read()
