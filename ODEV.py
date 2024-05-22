@@ -2,6 +2,7 @@ import cv2
 import mediapipe as mp
 import math
 import os
+import datetime
 
 # Kamera ayarları
 camera = cv2.VideoCapture(0)
@@ -81,7 +82,8 @@ report_folder = "C:/Raporlar"
 if not os.path.exists(report_folder):
     os.makedirs(report_folder)
 
-report_file = os.path.join(report_folder, "hand_report.txt")
+current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+report_file = os.path.join(report_folder, f"hand_report_{current_time}.txt")
 
 # Rapor dosyasına yazma fonksiyonu
 def write_to_report(report_file, thumb_angle, index_angle, mid_angle, ring_angle, pinky_angle, hand_status):
