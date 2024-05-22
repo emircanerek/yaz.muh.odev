@@ -96,6 +96,9 @@ def write_to_report(report_file, thumb_angle, index_angle, mid_angle, ring_angle
         f.write("Hand Status: {}\n".format(hand_status))
         f.close()
 
+# Ekrana basılacak tuş mesajı
+key_message = "Press 'n' to create a new report."
+
 while True:
     success, img = camera.read()
     if not success:
@@ -104,6 +107,9 @@ while True:
     imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     height, width, channel = img.shape
     results = hands.process(imgRGB)
+
+    # Ekrana basılacak tuş mesajını çiz
+    cv2.putText(img, key_message, (25, height - 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
     if results.multi_hand_landmarks:
         for hand_landmarks in results.multi_hand_landmarks:
@@ -135,8 +141,15 @@ while True:
 
     cv2.imshow("Camera", img)
 
+    # 'n' tuşuna basıldığında yeni bir rapor oluştur
+    key = cv2.waitKey(1)
+    if key == ord("n"):
+        current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        report_file = os.path.join(report_folder, f"hand_report_{current_time}.txt")
+        key_message = "New report created. Press 'n' for another report."
+
     # Kamera Çıkış Tuşu
-    if cv2.waitKey(1) & 0xFF == ord("q"):
+    if key == ord("q"):
         break
 
 camera.release()
