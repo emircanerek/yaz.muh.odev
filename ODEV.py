@@ -1,6 +1,7 @@
 import cv2
 import mediapipe as mp
 import math
+import os
 
 # Kamera ayarları
 camera = cv2.VideoCapture(0)
@@ -75,6 +76,24 @@ def detect_hand_status(thumb_angle, index_angle, mid_angle, ring_angle, pinky_an
     else:
         return "Sagliklisiniz"
 
+# Rapor dosyasını oluştur
+report_folder = "C:/Raporlar"
+if not os.path.exists(report_folder):
+    os.makedirs(report_folder)
+
+report_file = os.path.join(report_folder, "hand_report.txt")
+
+# Rapor dosyasına yazma fonksiyonu
+def write_to_report(report_file, thumb_angle, index_angle, mid_angle, ring_angle, pinky_angle, hand_status):
+    with open(report_file, "w") as f:
+        f.write("Thumb Angle: {}\n".format(thumb_angle))
+        f.write("Index Finger Angle: {}\n".format(index_angle))
+        f.write("Middle Finger Angle: {}\n".format(mid_angle))
+        f.write("Ring Finger Angle: {}\n".format(ring_angle))
+        f.write("Pinky Finger Angle: {}\n".format(pinky_angle))
+        f.write("Hand Status: {}\n".format(hand_status))
+        f.close()
+
 while True:
     success, img = camera.read()
     if not success:
@@ -108,6 +127,9 @@ while True:
 
             # Eklemleri çiz
             mpDraw.draw_landmarks(img, hand_landmarks, mpHands.HAND_CONNECTIONS)
+
+            # Rapor dosyasına yaz
+            write_to_report(report_file, thumb_angle, index_angle, mid_angle, ring_angle, pinky_angle, hand_status)
 
     cv2.imshow("Camera", img)
 
