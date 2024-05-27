@@ -55,4 +55,5 @@ Projede kullanılan temel fonksiyonlar aşağıda açıklanmıştır:
 
 ## Rapor Oluşturma
 Program çalışırken 'n' tuşuna basıldığında yeni bir rapor oluşturulur. Raporlar " C:/Raporlar " klasöründe saklanır ve her rapor oluşturulduğu zamana göre adlandırılır.
+
  
