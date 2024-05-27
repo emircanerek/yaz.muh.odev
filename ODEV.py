@@ -13,6 +13,9 @@ camera.set(4, 720)  # Yükseklik
 mpHands = mp.solutions.hands
 hands = mpHands.Hands()
 mpDraw = mp.solutions.drawing_utils
+not_healthy_angle = 50
+maybe_healthy_angle = 85
+
 
 # Açıları hesaplama fonksiyonu
 def calculate_angle(coords1, coords2, coords3):
@@ -70,9 +73,11 @@ def calculate_pinky_finger_angle(hand_landmarks, img_width, img_height):
 
 # El durumu tespiti fonksiyonu
 def detect_hand_status(thumb_angle, index_angle, mid_angle, ring_angle, pinky_angle):
-    if thumb_angle < 30 and index_angle < 30 and mid_angle < 30 and ring_angle < 30 and pinky_angle < 30:
+    if (thumb_angle < 90 or index_angle < not_healthy_angle or mid_angle < not_healthy_angle
+            or ring_angle < not_healthy_angle or pinky_angle < not_healthy_angle):
         return "Hastasiniz"
-    elif thumb_angle < 60 and index_angle < 60 and mid_angle < 60 and ring_angle < 60 and pinky_angle < 60:
+    elif (thumb_angle < 110 or index_angle < maybe_healthy_angle
+          or mid_angle < maybe_healthy_angle or ring_angle < maybe_healthy_angle or pinky_angle < maybe_healthy_angle):
         return "Hasta olabilirsiniz"
     else:
         return "Sagliklisiniz"
