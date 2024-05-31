@@ -16,8 +16,10 @@ hands = mpHands.Hands()
 mpDraw = mp.solutions.drawing_utils
 not_healthy_angle = 50
 maybe_healthy_angle = 85
-trigger_finger_angle_threshold = 75
-trigger_finger_duration_threshold = 2  # 5 seconds
+trigger_finger_angle_threshold = 60
+trigger_finger_duration_threshold = 3  # 3 seconds
+hand_open_close_duration_threshold = 2  # 2 seconds
+finger_open_angle_threshold = 90
 
 # Açıları hesaplama fonksiyonu
 def calculate_angle(coords1, coords2, coords3):
@@ -80,11 +82,11 @@ report_folder = "C:/Raporlar"
 if not os.path.exists(report_folder):
     os.makedirs(report_folder)
 
-current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+current_time = datetime.datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
 report_file = os.path.join(report_folder, f"hand_report_{current_time}.txt")
 
 # Rapor dosyasına yazma fonksiyonu
-def write_to_report(report_file, thumb_angle, index_angle, mid_angle, ring_angle, pinky_angle, hand_status):
+def write_to_report(report_file, thumb_angle, index_angle, mid_angle, ring_angle, pinky_angle, hand_status, trigger_finger_detected,hand_closed):
     with open(report_file, "w") as f:
         f.write("Thumb Angle: {}\n".format(thumb_angle))
         f.write("Index Finger Angle: {}\n".format(index_angle))
@@ -92,11 +94,17 @@ def write_to_report(report_file, thumb_angle, index_angle, mid_angle, ring_angle
         f.write("Ring Finger Angle: {}\n".format(ring_angle))
         f.write("Pinky Finger Angle: {}\n".format(pinky_angle))
         f.write("Hand Status: {}\n".format(hand_status))
+        f.write("Trigger Finger: {}\n".format(trigger_finger_detected))
+        f.write("Hand Closed Time: {}\n".format(hand_closed))
         f.close()
 
-# Tetik Parmak tespiti için veri yapıları
+# Tetik Parmak ve El Açılıp Kapanma tespiti için veri yapıları
 trigger_finger_start_time = None
 trigger_finger_detected = False
+hand_open_close_start_time = None
+hand_closed_time = None
+hand_open = False
+hand_closed = False
 
 while True:
     success, img = camera.read()
@@ -128,6 +136,9 @@ while True:
             pinky_angle = calculate_pinky_finger_angle(hand_landmarks, width, height)
             cv2.putText(img, f"Pinky_Angle: {int(pinky_angle)}", (25, 250), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
+            if trigger_finger_detected or hand_closed:
+                cv2.putText(img, f"Status: {hand_status}", (25, 300), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+
             # El durumu tespiti
             hand_status = detect_hand_status(thumb_angle, index_angle, mid_angle, ring_angle, pinky_angle)
             cv2.putText(img, f"Status: {hand_status}", (25, 300), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
@@ -141,20 +152,36 @@ while True:
                     trigger_finger_start_time = time.time()
                 elif time.time() - trigger_finger_start_time >= trigger_finger_duration_threshold:
                     trigger_finger_detected = True
-                    cv2.putText(img, "Tetik Parmak Hastaligi!", (25, 350), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                    cv2.putText(img, "Tetik Parmak Hastaligi Olabilir", (25, 350), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
             else:
                 trigger_finger_start_time = None
                 trigger_finger_detected = False
 
+            # Elin açılıp kapanma hızını tespit etme
+            angles = [thumb_angle, index_angle, mid_angle, ring_angle, pinky_angle]
+            avg_angle = sum(angles) / len(angles)
+            hand_closed_threshold = 100
+
+            if avg_angle < hand_closed_threshold:  # El kapalı
+                if not hand_closed:
+                    hand_closed = True
+                    hand_closed_time = time.time()
+                elif time.time() - hand_closed_time > hand_open_close_duration_threshold:
+                    cv2.putText(img, "El Yavas Acilip Kapaniyor: Romatizma, Artrit, Tuzak Noropati Olabilir ", (25, 400), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+            else:  # El açık
+                if hand_closed:
+                    hand_closed = False
+                    hand_closed_time = None
+
             # Rapor dosyasına yaz
-            write_to_report(report_file, thumb_angle, index_angle, mid_angle, ring_angle, pinky_angle, hand_status)
+            write_to_report(report_file, thumb_angle, index_angle, mid_angle, ring_angle, pinky_angle, hand_status, trigger_finger_detected, hand_closed)
 
     cv2.imshow("Camera", img)
 
     # 'n' tuşuna basıldığında yeni bir rapor oluştur
     key = cv2.waitKey(1)
     if key == ord("n"):
-        current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        current_time = datetime.datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
         report_file = os.path.join(report_folder, f"hand_report_{current_time}.txt")
         cv2.putText(img, "New report created. Press 'n' for another report.", (25, height - 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
