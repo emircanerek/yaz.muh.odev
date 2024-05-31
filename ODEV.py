@@ -3,6 +3,7 @@ import mediapipe as mp
 import math
 import os
 import datetime
+import time
 
 # Kamera ayarları
 camera = cv2.VideoCapture(0)
@@ -15,20 +16,16 @@ hands = mpHands.Hands()
 mpDraw = mp.solutions.drawing_utils
 not_healthy_angle = 50
 maybe_healthy_angle = 85
-
+trigger_finger_angle_threshold = 75
+trigger_finger_duration_threshold = 2  # 5 seconds
 
 # Açıları hesaplama fonksiyonu
 def calculate_angle(coords1, coords2, coords3):
-    # İki nokta arasındaki mesafeleri hesapla
     distance1 = math.dist(coords1, coords2)
     distance2 = math.dist(coords2, coords3)
     distance3 = math.dist(coords1, coords3)
-
-    # Eğer mesafe sıfırsa, açı hesaplanamaz
     if distance1 * distance2 == 0:
         return 0
-
-    # Kosinüs teoremi kullanarak açıyı hesapla
     angle = math.degrees(math.acos((distance1 ** 2 + distance2 ** 2 - distance3 ** 2) / (2 * distance1 * distance2)))
     return angle
 
@@ -36,35 +33,31 @@ def calculate_angle(coords1, coords2, coords3):
 def get_landmark_coords(landmark, img_width, img_height):
     return (landmark.x * img_width, landmark.y * img_height)
 
-# Başparmak açısını hesaplama fonksiyonu
+# Açılar hesaplama fonksiyonları
 def calculate_thumb_angle(hand_landmarks, img_width, img_height):
     thumb_base = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.THUMB_CMC], img_width, img_height)
     thumb_mid = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.THUMB_IP], img_width, img_height)
     thumb_tip = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.THUMB_TIP], img_width, img_height)
     return calculate_angle(thumb_base, thumb_mid, thumb_tip)
 
-# İşaret parmağı açısını hesaplama fonksiyonu
 def calculate_index_finger_angle(hand_landmarks, img_width, img_height):
     index_base = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.INDEX_FINGER_MCP], img_width, img_height)
     index_mid = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.INDEX_FINGER_PIP], img_width, img_height)
     index_tip = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.INDEX_FINGER_TIP], img_width, img_height)
     return calculate_angle(index_base, index_mid, index_tip)
 
-# Orta parmak açısını hesaplama fonksiyonu
 def calculate_middle_finger_angle(hand_landmarks, img_width, img_height):
     mid_base = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.MIDDLE_FINGER_MCP], img_width, img_height)
     mid_mid = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.MIDDLE_FINGER_DIP], img_width, img_height)
     mid_tip = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.MIDDLE_FINGER_TIP], img_width, img_height)
     return calculate_angle(mid_base, mid_mid, mid_tip)
 
-# Yüzük parmağı açısını hesaplama fonksiyonu
 def calculate_ring_finger_angle(hand_landmarks, img_width, img_height):
     ring_base = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.RING_FINGER_PIP], img_width, img_height)
     ring_mid = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.RING_FINGER_DIP], img_width, img_height)
     ring_tip = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.RING_FINGER_TIP], img_width, img_height)
     return calculate_angle(ring_base, ring_mid, ring_tip)
 
-# Serçe parmağı açısını hesaplama fonksiyonu
 def calculate_pinky_finger_angle(hand_landmarks, img_width, img_height):
     pinky_base = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.PINKY_PIP], img_width, img_height)
     pinky_mid = get_landmark_coords(hand_landmarks.landmark[mpHands.HandLandmark.PINKY_DIP], img_width, img_height)
@@ -101,8 +94,9 @@ def write_to_report(report_file, thumb_angle, index_angle, mid_angle, ring_angle
         f.write("Hand Status: {}\n".format(hand_status))
         f.close()
 
-# Ekrana basılacak tuş mesajı
-key_message = "Press 'n' to create a new report."
+# Tetik Parmak tespiti için veri yapıları
+trigger_finger_start_time = None
+trigger_finger_detected = False
 
 while True:
     success, img = camera.read()
@@ -114,7 +108,7 @@ while True:
     results = hands.process(imgRGB)
 
     # Ekrana basılacak tuş mesajını çiz
-    cv2.putText(img, key_message, (25, height - 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    cv2.putText(img, "Press 'n' to create a new report.", (25, height - 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
     if results.multi_hand_landmarks:
         for hand_landmarks in results.multi_hand_landmarks:
@@ -141,6 +135,17 @@ while True:
             # Eklemleri çiz
             mpDraw.draw_landmarks(img, hand_landmarks, mpHands.HAND_CONNECTIONS)
 
+            # Tetik Parmak tespiti
+            if any(angle < trigger_finger_angle_threshold for angle in [thumb_angle, index_angle, mid_angle, ring_angle, pinky_angle]):
+                if not trigger_finger_start_time:
+                    trigger_finger_start_time = time.time()
+                elif time.time() - trigger_finger_start_time >= trigger_finger_duration_threshold:
+                    trigger_finger_detected = True
+                    cv2.putText(img, "Tetik Parmak Hastaligi!", (25, 350), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+            else:
+                trigger_finger_start_time = None
+                trigger_finger_detected = False
+
             # Rapor dosyasına yaz
             write_to_report(report_file, thumb_angle, index_angle, mid_angle, ring_angle, pinky_angle, hand_status)
 
@@ -151,7 +156,7 @@ while True:
     if key == ord("n"):
         current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         report_file = os.path.join(report_folder, f"hand_report_{current_time}.txt")
-        key_message = "New report created. Press 'n' for another report."
+        cv2.putText(img, "New report created. Press 'n' for another report.", (25, height - 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
     # Kamera Çıkış Tuşu
     if key == ord("q"):
